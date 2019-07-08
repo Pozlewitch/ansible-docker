@@ -1,0 +1,46 @@
+---
+- name: install docker
+  hosts: docker
+  become: yes
+
+  tasks:
+   - name: Ensure docker package is present
+     apt:
+      name: docker.io
+      state: present
+
+   - name: Install docker-py
+     apt:
+      name: python-docker
+      state: present
+
+   - name: Copy Dockerfile
+     copy:
+      src: Dockerfile
+      dest: /var/Dockerfile
+
+   - name: Add permissions
+     file:
+      path: /var/lib/lxcfs/cgroup
+      state: directory
+      mode: u+rx
+      recurse: yes
+
+   - name: Ensure docker service is started
+     service:
+      name: docker
+      state: started
+
+   - name: Build image for prod
+     docker_image:
+      name: prod
+      state: present
+      path: /var
+
+   - name: Run docker container
+     docker_container:
+       name: prod
+       image: prod
+       ports:
+         - "8080:8080"
+       state: started
